@@ -544,7 +544,26 @@ class PixelReader {
         '<div class="loading">Gambar belum diunggah atau terlalu kecil.</div>';
       return;
     }
-    let html = '<div class="table-wrapper"><table class="pixel-table">';
+
+    // Create search box for main pixel data
+    let html = `
+      <div class="matrix-search-container">
+        <label for="search-pixelList">🔍 Cari Koordinat:</label>
+        <input type="number" id="search-x-pixelList" placeholder="X" min="0" max="${
+          this.canvas.width - 1
+        }" class="coord-input" />
+        <input type="number" id="search-y-pixelList" placeholder="Y" min="0" max="${
+          this.canvas.height - 1
+        }" class="coord-input" />
+        <button class="search-button" onclick="app.searchCoordinate('pixelList', ${
+          this.canvas.width
+        }, ${this.canvas.height})">Cari</button>
+        <span id="search-result-pixelList" class="search-result"></span>
+      </div>
+    `;
+
+    html +=
+      '<div class="table-wrapper"><table class="pixel-table" id="table-pixelList">';
     html += "<thead><tr><th></th>";
     for (let x = 0; x < width; x++) {
       html += `<th>${x}</th>`;
@@ -561,7 +580,7 @@ class PixelReader {
             0.299 * pixel.r + 0.587 * pixel.g + 0.114 * pixel.b;
           const isLight = brightness > 180;
           const lightClass = isLight ? " light-bg" : "";
-          html += `<td class="${lightClass}" style="background:rgb(${pixel.r},${pixel.g},${pixel.b});font-size:7px;" title="x(${x}),y(${y}) RGB(${pixel.r},${pixel.g},${pixel.b})">${pixel.r},${pixel.g},${pixel.b}</td>`;
+          html += `<td class="${lightClass}" data-x="${x}" data-y="${y}" style="background:rgb(${pixel.r},${pixel.g},${pixel.b});font-size:7px;" title="x(${x}),y(${y}) RGB(${pixel.r},${pixel.g},${pixel.b})">${pixel.r},${pixel.g},${pixel.b}</td>`;
         } else {
           html += "<td></td>";
         }
@@ -591,7 +610,27 @@ class PixelReader {
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
 
-    let html = '<div class="table-wrapper"><table class="pixel-table">';
+    // Create search box
+    let html = `
+      <div class="matrix-search-container">
+        <label for="search-${targetElementId}">🔍 Cari Koordinat:</label>
+        <input type="number" id="search-x-${targetElementId}" placeholder="X" min="0" max="${
+      canvas.width - 1
+    }" class="coord-input" />
+        <input type="number" id="search-y-${targetElementId}" placeholder="Y" min="0" max="${
+      canvas.height - 1
+    }" class="coord-input" />
+        <button class="search-button" onclick="app.searchCoordinate('${targetElementId}', ${
+      canvas.width
+    }, ${canvas.height})">Cari</button>
+        <span id="search-result-${targetElementId}" class="search-result"></span>
+      </div>
+    `;
+
+    html +=
+      '<div class="table-wrapper"><table class="pixel-table" id="table-' +
+      targetElementId +
+      '">';
     html += "<thead><tr><th></th>";
     for (let x = 0; x < width; x++) {
       html += `<th>${x}</th>`;
@@ -611,12 +650,15 @@ class PixelReader {
         const isLight = brightness > 180;
         const lightClass = isLight ? " light-bg" : "";
 
-        html += `<td class="${lightClass}" style="background:rgb(${r},${g},${b});font-size:7px;" title="x(${x}),y(${y}) RGB(${r},${g},${b})">${r},${g},${b}</td>`;
+        html += `<td class="${lightClass}" data-x="${x}" data-y="${y}" style="background:rgb(${r},${g},${b});font-size:7px;" title="x(${x}),y(${y}) RGB(${r},${g},${b})">${r},${g},${b}</td>`;
       }
       html += "</tr>";
     }
     html += "</tbody></table></div>";
     targetElement.innerHTML = html;
+
+    // Store canvas reference for search
+    targetElement.dataset.canvasId = canvas.id;
   }
 
   handleCanvasHover(event) {
@@ -650,6 +692,77 @@ class PixelReader {
 
   hideHoverInfo() {
     this.hoverInfo.classList.add("hidden");
+  }
+
+  // Search coordinate in matrix
+  searchCoordinate(targetElementId, canvasWidth, canvasHeight) {
+    const xInput = document.getElementById(`search-x-${targetElementId}`);
+    const yInput = document.getElementById(`search-y-${targetElementId}`);
+    const resultSpan = document.getElementById(
+      `search-result-${targetElementId}`
+    );
+    const table = document.getElementById(`table-${targetElementId}`);
+
+    if (!xInput || !yInput || !resultSpan || !table) {
+      console.error("Search elements not found");
+      return;
+    }
+
+    const x = parseInt(xInput.value);
+    const y = parseInt(yInput.value);
+
+    // Validation
+    if (isNaN(x) || isNaN(y)) {
+      resultSpan.textContent = "⚠️ Masukkan koordinat X dan Y";
+      resultSpan.className = "search-result error";
+      return;
+    }
+
+    if (x < 0 || x >= canvasWidth || y < 0 || y >= canvasHeight) {
+      resultSpan.textContent = `⚠️ Koordinat di luar range (0-${
+        canvasWidth - 1
+      }, 0-${canvasHeight - 1})`;
+      resultSpan.className = "search-result error";
+      return;
+    }
+
+    // Remove previous highlights
+    const previousHighlight = table.querySelector(".highlight-cell");
+    if (previousHighlight) {
+      previousHighlight.classList.remove("highlight-cell");
+    }
+
+    // Find and highlight the cell
+    const cell = table.querySelector(`td[data-x="${x}"][data-y="${y}"]`);
+
+    if (cell) {
+      cell.classList.add("highlight-cell");
+
+      // Get RGB values from title attribute
+      const title = cell.getAttribute("title");
+      const rgbMatch = title.match(/RGB\((\d+),(\d+),(\d+)\)/);
+
+      if (rgbMatch) {
+        const r = rgbMatch[1];
+        const g = rgbMatch[2];
+        const b = rgbMatch[3];
+        resultSpan.innerHTML = `✅ Ditemukan! RGB(${r}, ${g}, ${b})`;
+        resultSpan.className = "search-result success";
+      } else {
+        resultSpan.textContent = "✅ Koordinat ditemukan";
+        resultSpan.className = "search-result success";
+      }
+
+      // Scroll to cell
+      cell.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+        inline: "center",
+      });
+    } else {
+      resultSpan.textContent = `⚠️ Koordinat (${x}, ${y}) tidak terlihat di matrix 100x100`;
+      resultSpan.className = "search-result warning";
+    }
   }
 
   // Handle tab change - auto apply untuk grayscale
@@ -1088,7 +1201,10 @@ class PixelReader {
 
 // Initialize the app
 new TabManager();
-new PixelReader();
+const app = new PixelReader();
+
+// Make app globally accessible for onclick handlers
+window.app = app;
 
 console.log("🎨 Image Processing App initialized!");
 console.log(

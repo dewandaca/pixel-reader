@@ -638,3 +638,101 @@ input[type="file"] {
     padding: 16px;
   }
 }
+
+/* Matrix Search Styles */
+.matrix-search-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+}
+
+.matrix-search-container label {
+  font-weight: 600;
+  color: #475569;
+  font-size: 0.95em;
+}
+
+.coord-input {
+  width: 80px;
+  padding: 6px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.9em;
+  transition: all 0.2s ease;
+}
+
+.coord-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.search-button {
+  padding: 6px 16px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.search-button:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+}
+
+.search-button:active {
+  transform: translateY(0);
+}
+
+.search-result {
+  font-size: 0.9em;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+.search-result.success {
+  color: #10b981;
+  background: #d1fae5;
+}
+
+.search-result.error {
+  color: #ef4444;
+  background: #fee2e2;
+}
+
+.search-result.warning {
+  color: #f59e0b;
+  background: #fef3c7;
+}
+
+/* Highlight cell when found */
+.highlight-cell {
+  animation: highlight-pulse 1.5s ease-in-out;
+  box-shadow: 0 0 0 3px #3b82f6 !important;
+  transform: scale(1.15) !important;
+  z-index: 100 !important;
+  position: relative;
+}
+
+@keyframes highlight-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px #3b82f6;
+  }
+  50% {
+    box-shadow: 0 0 0 6px #60a5fa;
+  }
+}
